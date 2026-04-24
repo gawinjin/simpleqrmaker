@@ -3,104 +3,335 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Custom QR Code Generator</title>
+    <title>Simple QR Maker</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.6.0-rc.1/lib/qr-code-styling.js"></script>
     <style>
+        :root {
+            --page: #f4f4f4;
+            --surface: #ffffff;
+            --surface-soft: #eeeeee;
+            --ink: #111111;
+            --muted: #5f5f5f;
+            --line: #d7d7d7;
+            --line-strong: #111111;
+            --shadow: 0 12px 32px rgba(0, 0, 0, 0.06);
+            --focus: 0 0 0 3px rgba(0, 0, 0, 0.16);
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            min-height: 100vh; color: #fff; overflow-x: hidden;
+            background: var(--page);
+            color: var(--ink);
+            min-height: 100vh;
+            overflow-x: hidden;
         }
+
         header {
-            background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
-            padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.25rem 2rem;
+            border-bottom: 1px solid var(--line);
+            background: var(--surface);
         }
-        header h1 { font-size: 1.5rem; background: linear-gradient(90deg, #00d4ff, #7b2fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        header h1 {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            font-size: 1.35rem;
+            font-weight: 650;
+            letter-spacing: 0;
+            color: var(--ink);
+        }
+
+        header h1 i,
+        .section-title i,
+        .preview-section h2 i { color: var(--ink); }
+
         .download-btn {
-            background: linear-gradient(135deg, #00d4ff, #7b2fff); border: none; padding: 0.75rem 1.5rem;
-            border-radius: 25px; color: #fff; font-weight: 600; cursor: pointer; transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.55rem;
+            min-height: 44px;
+            border: 1px solid var(--line-strong);
+            border-radius: 8px;
+            padding: 0.75rem 1.2rem;
+            background: var(--ink);
+            color: #fff;
+            font-weight: 650;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s, transform 0.2s, box-shadow 0.2s;
         }
-        .download-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,212,255,0.3); }
-        .container { display: flex; gap: 2rem; padding: 2rem; max-width: 1400px; margin: 0 auto; }
-        .preview-section {
-            flex: 1; background: rgba(255,255,255,0.05); backdrop-filter: blur(10px);
-            border-radius: 20px; padding: 2rem; display: flex; flex-direction: column; align-items: center;
-            min-width: 0;
+
+        .download-btn:hover {
+            background: #333;
+            border-color: #333;
+            transform: translateY(-1px);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
         }
-        .preview-section h2 { margin-bottom: 1.5rem; font-size: 1.2rem; opacity: 0.9; }
-        #qr-container { background: #fff; border-radius: 15px; padding: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+
+        .download-btn:focus-visible,
+        .shape-option:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        .file-upload-label:focus-visible,
+        .toggle:focus-visible {
+            outline: none;
+            box-shadow: var(--focus);
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: minmax(320px, 0.95fr) minmax(420px, 1.15fr);
+            gap: 1.5rem;
+            width: min(1280px, 100%);
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .preview-section,
         .controls-section {
-            flex: 1.2; background: rgba(255,255,255,0.05); backdrop-filter: blur(10px);
-            border-radius: 20px; padding: 1.5rem; max-height: 80vh; overflow-y: auto;
             min-width: 0;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--surface);
+            box-shadow: var(--shadow);
         }
-        .controls-section::-webkit-scrollbar { width: 6px; }
-        .controls-section::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
-        .section { margin-bottom: 1.5rem; }
-        .section-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.75rem; color: #00d4ff; text-transform: uppercase; letter-spacing: 1px; }
-        .shape-grid { display: grid; grid-template-columns: repeat(9, 1fr); gap: 8px; }
+
+        .preview-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            align-self: start;
+            padding: 2rem;
+        }
+
+        .preview-section h2 {
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+            font-weight: 650;
+            color: var(--muted);
+        }
+
+        #qr-container {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 18px;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+        }
+
+        .controls-section {
+            max-height: calc(100vh - 6.5rem);
+            overflow-y: auto;
+            padding: 1.25rem;
+        }
+
+        .controls-section::-webkit-scrollbar { width: 8px; }
+        .controls-section::-webkit-scrollbar-thumb { background: #b8b8b8; border-radius: 8px; }
+
+        .section {
+            padding: 1.1rem 0;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .section:first-child { padding-top: 0; }
+        .section:last-of-type { border-bottom: 0; padding-bottom: 0; }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            margin-bottom: 0.85rem;
+            color: var(--ink);
+            font-size: 0.78rem;
+            font-weight: 750;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .shape-grid { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 0.55rem; }
+
         .shape-option {
-            aspect-ratio: 1; background: rgba(255,255,255,0.1); border: 2px solid transparent;
-            border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s; padding: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 1;
+            min-width: 0;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 0.45rem;
+            background: var(--surface);
+            color: var(--muted);
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s;
         }
-        .shape-option:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); }
-        .shape-option.selected { border-color: #00d4ff; background: rgba(0,212,255,0.2); }
-        .shape-option svg { width: 100%; height: 100%; fill: #fff; }
+
+        .shape-option:hover {
+            background: var(--surface-soft);
+            border-color: #9a9a9a;
+            transform: translateY(-1px);
+        }
+
+        .shape-option.selected {
+            background: var(--ink);
+            border-color: var(--ink);
+            color: #fff;
+        }
+
+        .shape-option svg { width: 100%; height: 100%; fill: currentColor; }
+
         .color-row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
-        .color-picker-wrap { display: flex; align-items: center; gap: 0.5rem; }
-        .color-picker-wrap label { font-size: 0.85rem; opacity: 0.8; }
-        .color-picker-wrap input[type="color"] { width: 50px; height: 35px; border: none; border-radius: 8px; cursor: pointer; }
-        .toggle-wrap { display: flex; align-items: center; gap: 0.5rem; }
-        .toggle { width: 50px; height: 26px; background: rgba(255,255,255,0.2); border-radius: 13px; cursor: pointer; position: relative; transition: 0.3s; }
-        .toggle.active { background: #00d4ff; }
-        .toggle::after { content: ''; position: absolute; width: 22px; height: 22px; background: #fff; border-radius: 50%; top: 2px; left: 2px; transition: 0.3s; }
-        .toggle.active::after { left: 26px; }
-        .input-group { margin-bottom: 1rem; }
-        .input-group label { display: block; font-size: 0.85rem; margin-bottom: 0.4rem; opacity: 0.8; }
-        .input-group input[type="text"], .input-group select {
-            width: 100%; padding: 0.7rem 1rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 10px; color: #fff; font-size: 0.9rem;
+
+        .color-picker-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            min-height: 42px;
         }
-        .input-group input::placeholder { color: rgba(255,255,255,0.5); }
-        .input-group select option { background: #1a1a2e; color: #fff; }
+
+        .color-picker-wrap label,
+        .toggle-label,
+        .input-group label {
+            color: var(--muted);
+            font-size: 0.86rem;
+            font-weight: 550;
+        }
+
+        .color-picker-wrap input[type="color"] {
+            width: 52px;
+            height: 36px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: var(--surface);
+            cursor: pointer;
+        }
+
+        .toggle-wrap { display: flex; align-items: center; gap: 0.65rem; min-height: 42px; }
+
+        .toggle {
+            position: relative;
+            width: 48px;
+            height: 26px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: var(--surface-soft);
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        .toggle.active {
+            background: var(--ink);
+            border-color: var(--ink);
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18);
+            transition: transform 0.2s;
+        }
+
+        .toggle.active::after { transform: translateX(22px); }
+
+        .input-group { margin-bottom: 1rem; }
+        .input-group:last-child { margin-bottom: 0; }
+        .input-group label { display: block; margin-bottom: 0.45rem; }
+
+        .input-group input[type="text"],
+        .input-group select {
+            width: 100%;
+            min-height: 44px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 0.75rem 0.85rem;
+            background: var(--surface);
+            color: var(--ink);
+            font-size: 0.95rem;
+        }
+
+        .input-group input::placeholder { color: #8a8a8a; }
+        .input-group select option { background: var(--surface); color: var(--ink); }
+
         .file-upload { position: relative; }
         .file-upload input[type="file"] { display: none; }
+
         .file-upload-label {
-            display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1rem;
-            background: rgba(255,255,255,0.1); border: 2px dashed rgba(255,255,255,0.3);
-            border-radius: 10px; cursor: pointer; transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            min-height: 44px;
+            padding: 0.75rem 0.85rem;
+            border: 1px dashed #9a9a9a;
+            border-radius: 8px;
+            background: var(--surface);
+            color: var(--muted);
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s, color 0.2s;
         }
-        .file-upload-label:hover { border-color: #00d4ff; }
+
+        .file-upload-label:hover {
+            border-color: var(--ink);
+            background: var(--surface-soft);
+            color: var(--ink);
+        }
+
         .range-label { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
-        .range-label span { color: #00d4ff; font-weight: 600; white-space: nowrap; }
+        .range-label span { color: var(--ink); font-weight: 700; white-space: nowrap; }
+
         .slider-wrap { display: flex; align-items: center; gap: 1rem; }
-        .slider-wrap input[type="range"] { flex: 1; }
-        .slider-wrap span { min-width: 40px; text-align: right; font-size: 0.85rem; }
-        .download-section { margin-top: 1.5rem; }
-        .download-section .download-btn { width: 100%; padding: 1rem; font-size: 1rem; }
+
+        .slider-wrap input[type="range"] {
+            flex: 1;
+            accent-color: var(--ink);
+        }
+
+        .download-section { margin-top: 1.25rem; }
+        .download-section .download-btn { width: 100%; padding: 0.85rem 1rem; font-size: 0.98rem; }
+
         @media (max-width: 900px) {
-            header { flex-wrap: wrap; gap: 1rem; padding: 1rem; }
-            header h1 { font-size: 1.35rem; }
-            .container { flex-direction: column; padding: 1rem; }
-            .preview-section, .controls-section { padding: 1.25rem; width: 100%; }
+            header { flex-wrap: wrap; padding: 1rem; }
+            header h1 { font-size: 1.25rem; }
+            .container { grid-template-columns: 1fr; padding: 1rem; }
+            .preview-section, .controls-section { padding: 1.1rem; width: 100%; }
+            .controls-section { max-height: none; }
             #qr-container { padding: 12px; }
             .shape-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
             .range-label { flex-wrap: wrap; }
+        }
+
+        @media (max-width: 560px) {
+            header { align-items: flex-start; flex-direction: column; }
+            header .download-btn { width: 100%; }
+            .shape-grid { grid-template-columns: repeat(3, 72px); }
+            .shape-option { width: 72px; }
         }
     </style>
 </head>
 <body>
     <header>
-        <h1><i class="fas fa-qrcode"></i> Custom QR Code Generator</h1>
+        <h1><i class="fas fa-qrcode"></i> Simple QR Maker</h1>
         <button class="download-btn" onclick="downloadQR()"><i class="fas fa-download"></i> Download PNG</button>
     </header>
     <div class="container">
         <div class="preview-section">
-            <h2><i class="fas fa-eye"></i> Live Preview</h2>
+            <h2><i class="fas fa-eye"></i> Preview</h2>
             <div id="qr-container"></div>
         </div>
         <div class="controls-section">
@@ -128,7 +359,7 @@
                         <input type="color" id="bg-color" value="#ffffff">
                     </div>
                     <div class="toggle-wrap">
-                        <span style="font-size:0.85rem;">Transparent BG</span>
+                        <span class="toggle-label">Transparent BG</span>
                         <div class="toggle" id="transparent-toggle"></div>
                     </div>
                 </div>
@@ -162,7 +393,7 @@
                     </select>
                 </div>
                 <div class="input-group">
-                    <label class="range-label">Output Size <span id="output-size-val">500 × 500 px</span></label>
+                    <label class="range-label">Output Size <span id="output-size-val">500 x 500 px</span></label>
                     <div class="slider-wrap">
                         <input type="range" id="output-size" min="150" max="1000" step="10" value="500">
                     </div>
@@ -269,7 +500,7 @@
 
         function updateOutputSizeLabel() {
             const size = parseInt(document.getElementById('output-size').value);
-            document.getElementById('output-size-val').textContent = `${size} × ${size} px`;
+            document.getElementById('output-size-val').textContent = `${size} x ${size} px`;
         }
 
         // Event listeners

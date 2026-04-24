@@ -2,6 +2,8 @@
 
 Simple QR Maker is a client-side custom QR code generator that runs in the browser. It lets you style QR codes, add an optional center image, and export square PNG files.
 
+The interface uses a monochrome, utilitarian style with restrained surfaces, clear controls, and a focused tool workspace.
+
 ## Features
 
 - Custom QR data for URLs or text
