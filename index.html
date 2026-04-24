@@ -11,7 +11,7 @@
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            min-height: 100vh; color: #fff;
+            min-height: 100vh; color: #fff; overflow-x: hidden;
         }
         header {
             background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
@@ -28,12 +28,14 @@
         .preview-section {
             flex: 1; background: rgba(255,255,255,0.05); backdrop-filter: blur(10px);
             border-radius: 20px; padding: 2rem; display: flex; flex-direction: column; align-items: center;
+            min-width: 0;
         }
         .preview-section h2 { margin-bottom: 1.5rem; font-size: 1.2rem; opacity: 0.9; }
         #qr-container { background: #fff; border-radius: 15px; padding: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
         .controls-section {
             flex: 1.2; background: rgba(255,255,255,0.05); backdrop-filter: blur(10px);
             border-radius: 20px; padding: 1.5rem; max-height: 80vh; overflow-y: auto;
+            min-width: 0;
         }
         .controls-section::-webkit-scrollbar { width: 6px; }
         .controls-section::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
@@ -73,14 +75,21 @@
             border-radius: 10px; cursor: pointer; transition: 0.3s;
         }
         .file-upload-label:hover { border-color: #00d4ff; }
+        .range-label { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+        .range-label span { color: #00d4ff; font-weight: 600; white-space: nowrap; }
         .slider-wrap { display: flex; align-items: center; gap: 1rem; }
         .slider-wrap input[type="range"] { flex: 1; }
         .slider-wrap span { min-width: 40px; text-align: right; font-size: 0.85rem; }
         .download-section { margin-top: 1.5rem; }
         .download-section .download-btn { width: 100%; padding: 1rem; font-size: 1rem; }
         @media (max-width: 900px) {
-            .container { flex-direction: column; }
-            .shape-grid { grid-template-columns: repeat(6, 1fr); }
+            header { flex-wrap: wrap; gap: 1rem; padding: 1rem; }
+            header h1 { font-size: 1.35rem; }
+            .container { flex-direction: column; padding: 1rem; }
+            .preview-section, .controls-section { padding: 1.25rem; width: 100%; }
+            #qr-container { padding: 12px; }
+            .shape-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .range-label { flex-wrap: wrap; }
         }
     </style>
 </head>
@@ -153,17 +162,14 @@
                     </select>
                 </div>
                 <div class="input-group">
-                    <label>Output Size</label>
-                    <select id="output-size">
-                        <option value="1024">1024 × 1024 px</option>
-                        <option value="2048" selected>2048 × 2048 px</option>
-                        <option value="3072">3072 × 3072 px</option>
-                        <option value="4096">4096 × 4096 px</option>
-                    </select>
+                    <label class="range-label">Output Size <span id="output-size-val">500 × 500 px</span></label>
+                    <div class="slider-wrap">
+                        <input type="range" id="output-size" min="150" max="1000" step="10" value="500">
+                    </div>
                 </div>
             </div>
             <div class="download-section">
-                <button class="download-btn" onclick="downloadQR()"><i class="fas fa-download"></i> Download PNG (High Resolution)</button>
+                <button class="download-btn" onclick="downloadQR()"><i class="fas fa-download"></i> Download PNG</button>
             </div>
         </div>
     </div>
@@ -189,6 +195,11 @@
 
         let currentBody = 'square', currentFrame = 'square', currentBall = 'square';
         let logoImage = '', qrCode;
+
+        function getPreviewSize() {
+            const mobileLimit = window.matchMedia('(max-width: 900px)').matches ? 240 : 300;
+            return Math.max(150, Math.min(mobileLimit, window.innerWidth - 150));
+        }
 
         function createShapeOptions(container, shapes, type) {
             const el = document.getElementById(container);
@@ -217,7 +228,7 @@
             const logoSize = parseInt(document.getElementById('logo-size').value) / 100;
 
             const options = {
-                width: 300, height: 300, data,
+                width: getPreviewSize(), height: getPreviewSize(), data,
                 dotsOptions: { type: currentBody, color: qrColor },
                 cornersSquareOptions: { type: currentFrame, color: qrColor },
                 cornersDotOptions: { type: currentBall, color: qrColor },
@@ -256,6 +267,11 @@
             downloadQR.download({ name: 'qr-code', extension: 'png' });
         }
 
+        function updateOutputSizeLabel() {
+            const size = parseInt(document.getElementById('output-size').value);
+            document.getElementById('output-size-val').textContent = `${size} × ${size} px`;
+        }
+
         // Event listeners
         document.getElementById('transparent-toggle').onclick = function() {
             this.classList.toggle('active');
@@ -269,6 +285,8 @@
             document.getElementById('logo-size-val').textContent = this.value;
             updateQR();
         };
+        document.getElementById('output-size').oninput = updateOutputSizeLabel;
+        window.addEventListener('resize', updateQR);
         document.getElementById('logo-upload').onchange = function(e) {
             const file = e.target.files[0];
             if (file) {
@@ -283,6 +301,7 @@
         createShapeOptions('body-shapes', bodyShapes, 'body');
         createShapeOptions('frame-shapes', frameShapes, 'frame');
         createShapeOptions('ball-shapes', ballShapes, 'ball');
+        updateOutputSizeLabel();
         updateQR();
     </script>
 </body>
